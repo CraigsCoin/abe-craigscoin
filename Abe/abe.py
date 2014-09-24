@@ -746,13 +746,24 @@ class Abe:
             abe.log.warning('Assuming default chain for Transaction ' + tx['hash'])
             chain = abe.get_default_chain()
 
+        msg = tx['msg']
+        if msg:
+            try:
+                msg = msg.decode('utf-8')
+            except UnicodeDecodeError:
+                msg = 'Decode error.'
         body += [
             'Number of inputs: ', len(tx['in']),
             ' (<a href="#inputs">Jump to inputs</a>)<br />\n',
             'Total in: ', format_satoshis(tx['value_in'], chain), '<br />\n',
             'Number of outputs: ', len(tx['out']),
             ' (<a href="#outputs">Jump to outputs</a>)<br />\n',
-            'Total out: ', format_satoshis(tx['value_out'], chain), '<br />\n',
+            'Total out: ', format_satoshis(tx['value_out'], chain), '<br />\n']
+        if msg:
+            body += [
+                'Msg: ', escape(msg), '<br />\n'
+                ]
+        body += [
             'Size: ', tx['size'], ' bytes<br />\n',
             'Fee: ', format_satoshis(0 if is_coinbase else
                                      (tx['value_in'] and tx['value_out'] and

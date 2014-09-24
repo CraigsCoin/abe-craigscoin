@@ -82,6 +82,7 @@ CHAIN_CONFIG = [
     {"chain":"Maxcoin"},
     #{"chain":"",
     # "code3":"", "address_version":"\x", "magic":""},
+    {"chain":"CraigsCoin","code3":"CRAIG","address_version":"\x1c","magic":"\x88\xf0\xb1\xe9","policy":"X11PosChain"},
     ]
 
 NULL_PUBKEY_HASH = "\0" * Chain.PUBKEY_HASH_LENGTH
@@ -543,6 +544,7 @@ LEFT JOIN block prev ON (b.prev_block_id = prev.block_id)""",
     tx.tx_id,
     tx.tx_hash,
     tx.tx_lockTime,
+    tx.tx_msg,
     tx.tx_version,
     tx.tx_size,
     txout.txout_id,
@@ -570,6 +572,7 @@ LEFT JOIN block prev ON (b.prev_block_id = prev.block_id)""",
     tx.tx_id,
     tx.tx_hash,
     tx.tx_lockTime,
+    tx.tx_msg,
     tx.tx_version,
     tx.tx_size,
     txin.txin_id,
@@ -722,6 +725,7 @@ store._ddl['configvar'],
     tx_hash       BINARY(32)  UNIQUE NOT NULL,
     tx_version    NUMERIC(10),
     tx_lockTime   NUMERIC(10),
+    tx_msg        TEXT,
     tx_size       NUMERIC(10)
 )""",
 
@@ -1066,10 +1070,10 @@ store._ddl['txout_approx'],
         block_id = int(store.new_id("block"))
         b['block_id'] = block_id
 
-        if chain is not None:
+#        if chain is not None:
             # Verify Merkle root.
-            if b['hashMerkleRoot'] != chain.merkle_root(tx_hash_array):
-                raise MerkleRootMismatch(b['hash'], tx_hash_array)
+#            if b['hashMerkleRoot'] != chain.merkle_root(tx_hash_array):
+#                raise MerkleRootMismatch(b['hash'], tx_hash_array)
 
         # Look for the parent block.
         hashPrev = b['hashPrev']
@@ -1781,10 +1785,12 @@ store._ddl['txout_approx'],
             tx['size'] = len(tx['__data__'])
 
         store.sql("""
-            INSERT INTO tx (tx_id, tx_hash, tx_version, tx_lockTime, tx_size)
-            VALUES (?, ?, ?, ?, ?)""",
+            INSERT INTO tx (tx_id, tx_hash, tx_version, tx_lockTime, tx_msg, tx_size)
+            VALUES (?, ?, ?, ?, ?, ?)""",
                   (tx_id, dbhash, store.intin(tx['version']),
-                   store.intin(tx['lockTime']), tx['size']))
+                   store.intin(tx['lockTime']),
+                   tx['msg'],
+                   tx['size']))
 
         # Import transaction outputs.
         tx['value_out'] = 0
@@ -1902,7 +1908,7 @@ store._ddl['txout_approx'],
 
         if tx_id is not None:
             row = store.selectrow("""
-                SELECT tx_hash, tx_version, tx_lockTime, tx_size
+                SELECT tx_hash, tx_version, tx_lockTime, tx_msg, tx_size
                   FROM tx
                  WHERE tx_id = ?
             """, (tx_id,))
@@ -1912,7 +1918,7 @@ store._ddl['txout_approx'],
 
         elif tx_hash is not None:
             row = store.selectrow("""
-                SELECT tx_id, tx_version, tx_lockTime, tx_size
+                SELECT tx_id, tx_version, tx_lockTime, tx_msg, tx_size
                   FROM tx
                  WHERE tx_hash = ?
             """, (store.hashin_hex(tx_hash),))
@@ -1926,7 +1932,8 @@ store._ddl['txout_approx'],
 
         tx['version' if is_bin else 'ver']        = int(row[1])
         tx['lockTime' if is_bin else 'lock_time'] = int(row[2])
-        tx['size'] = int(row[3])
+        tx['msg'] = row[3]
+        tx['size'] = int(row[4])
 
         txins = []
         tx['txIn' if is_bin else 'in'] = txins
@@ -2003,7 +2010,7 @@ store._ddl['txout_approx'],
             raise MalformedHash()
 
         row = store.selectrow("""
-            SELECT tx_id, tx_version, tx_lockTime, tx_size
+            SELECT tx_id, tx_version, tx_lockTime, tx_msg, tx_size
               FROM tx
              WHERE tx_hash = ?
         """, (dbhash,))
@@ -2015,7 +2022,8 @@ store._ddl['txout_approx'],
             'hash': tx_hash,
             'version': int(row[1]),
             'lockTime': int(row[2]),
-            'size': int(row[3]),
+            'msg': row[3],
+            'size': int(row[4]),
             }
 
         def parse_tx_cc(row):

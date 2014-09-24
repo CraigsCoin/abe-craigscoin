@@ -93,6 +93,7 @@ def parse_Transaction(vds, has_nTime=False):
   for i in xrange(n_vout):
     d['txOut'].append(parse_TxOut(vds))
   d['lockTime'] = vds.read_uint32()
+  d['msg'] = vds.read_bytes(vds.read_compact_size())
   d['__data__'] = vds.input[start_pos:vds.read_cursor]
   return d
 
