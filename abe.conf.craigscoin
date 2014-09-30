@@ -339,7 +339,7 @@
  
     default-loader = blkfile
     dbtype MySQLdb
-    connect-args {"user":"abe","db":"abe","passwd":"abe"}
+    connect-args {"user":"abe","db":"abe","passwd":"abe","use_unicode":"True","charset":"utf8"}
     upgrade
     port 2054
     host localhost

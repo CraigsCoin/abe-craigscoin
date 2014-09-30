@@ -10,6 +10,8 @@ import socket
 import time
 from util import short_hex, long_hex
 import struct
+import json_spirit_decode
+
 
 def parse_CAddress(vds):
   d = {}
@@ -93,7 +95,7 @@ def parse_Transaction(vds, has_nTime=False):
   for i in xrange(n_vout):
     d['txOut'].append(parse_TxOut(vds))
   d['lockTime'] = vds.read_uint32()
-  d['msg'] = vds.read_bytes(vds.read_compact_size())
+  d['msg'] = json_spirit_decode.decode(vds.read_bytes(vds.read_compact_size())).decode('utf-8')
   d['__data__'] = vds.input[start_pos:vds.read_cursor]
   return d
 

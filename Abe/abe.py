@@ -747,11 +747,6 @@ class Abe:
             chain = abe.get_default_chain()
 
         msg = tx['msg']
-        if msg:
-            try:
-                msg = msg.decode('utf-8')
-            except UnicodeDecodeError:
-                msg = 'Decode error.'
         body += [
             'Number of inputs: ', len(tx['in']),
             ' (<a href="#inputs">Jump to inputs</a>)<br />\n',
